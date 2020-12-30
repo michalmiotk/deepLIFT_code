@@ -41,7 +41,7 @@ class SomeModel(torch.nn.Module):
             y_dif = module.orig_outputs[0] - module.ref_outputs[0]
             x_dif = module.orig_inputs[0] - module.ref_inputs[0]
             
-            grad_input = torch.where(abs(x_dif)<1e-6, grad_input[0], grad_output[0]*y_dif/x_dif)
+            grad_input = torch.where(abs(x_dif)<1e-10, grad_input[0], grad_output[0]*y_dif/x_dif)
             #print("grad_input",grad_input)
             return (grad_input,)
 
@@ -72,13 +72,8 @@ class SomeModel(torch.nn.Module):
         self.register_hook_base(ref=False)
         self.model(self.im)
         self.unregister_forward_hooks()
-        merge_tensor = torch.cat((self.im,self.baseline), 0)
-        print("wymaga grad", merge_tensor.requires_grad)
-        
-        some_output = self.model(merge_tensor)
-        print("some_output[:,target]", some_output[:,target])
-        grads = torch.autograd.grad(self.model(merge_tensor)[:,target], self.im, torch.ones((2)))
+        grads = torch.autograd.grad(self.model(self.im)[:,target], self.im, torch.ones((1)))
         print(grads[0].shape,  len(grads))
         grad = grads[0]/grads[0].max()
-        torchvision.utils.save_image(grad, "out_without.png")
+        torchvision.utils.save_image(grad, "out_without.jpeg")
 SomeModel().interpret()
